@@ -1,10 +1,16 @@
 import streamlit as st
 
 from services.product_query import get_registered_products
+from services.storage_service import get_qr_code_url
 
 
 class ProductListPage:
     PAGE_SIZE = 10
+
+    @staticmethod
+    def _open_authentication(product_id):
+        st.session_state.authenticated_product_id = product_id
+        st.session_state.selected_page = "Autenticar e rastrear"
 
     @staticmethod
     def _matches_search(product, search_term):
@@ -79,3 +85,16 @@ class ProductListPage:
             with st.expander(label):
                 self._show_details(product)
                 st.code(product["product_id"], language=None)
+                try:
+                    qr_code_url = get_qr_code_url(product["product_id"])
+                    if qr_code_url:
+                        st.image(qr_code_url, width=220, caption="QR Code do produto")
+                except Exception as error:
+                    st.caption(f"Não foi possível carregar a imagem do QR Code: {error}")
+                st.button(
+                    "Autenticar e rastrear este produto",
+                    key=f"open_auth_{product['product_id']}",
+                    on_click=self._open_authentication,
+                    args=(product["product_id"],),
+                    use_container_width=True,
+                )

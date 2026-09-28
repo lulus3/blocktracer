@@ -59,10 +59,30 @@ services:
     environment:
       PROVIDER_URL: http://ganache:8545
       CONTRACT_ADDRESS: ${CONTRACT_ADDRESS:-}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-}
+      MINIO_BUCKET: ${MINIO_BUCKET:-blockchain}
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      MINIO_QR_PREFIX: ${MINIO_QR_PREFIX:-qrcodes}
     depends_on:
       - ganache
     ports:
       - "127.0.0.1:8501:8501"
+    restart: unless-stopped
+
+  verifier:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      PROVIDER_URL: http://ganache:8545
+      CONTRACT_ADDRESS: ${CONTRACT_ADDRESS:-}
+    depends_on:
+      - ganache
+    ports:
+      - "8502:8501"
+    command: ["streamlit", "run", "verifier_app.py", "--server.address=0.0.0.0", "--server.port=8501"]
     restart: unless-stopped
 
 volumes:

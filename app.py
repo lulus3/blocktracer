@@ -75,7 +75,13 @@ class App:
         owner = st.contract.functions.owner().call()
         if st.sender_address.lower() == owner.lower():
             pages["Administração"] = AdminPage()
-        selected_page = st.radio("Navegação", list(pages), horizontal=True, label_visibility="collapsed")
+        selected_page = st.radio(
+            "Navegação",
+            list(pages),
+            horizontal=True,
+            label_visibility="collapsed",
+            key="selected_page",
+        )
         pages[selected_page].render()
 
         with st.sidebar:

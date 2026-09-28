@@ -7,6 +7,7 @@ import qrcode
 import streamlit as st
 
 from services.contract_service import send_transaction
+from services.storage_service import upload_qr_code
 
 
 class RegisterProduct:
@@ -75,3 +76,10 @@ class RegisterProduct:
             file_name=f"produto-{product_id}.png",
             mime="image/png",
         )
+
+        try:
+            object_key = upload_qr_code(product_id, qr_code)
+            if object_key:
+                st.success("Uma cópia do QR Code foi salva com sucesso.")
+        except Exception as error:
+            st.warning(f"Produto registrado, mas não foi possível salvar a cópia do QR Code: {error}")

@@ -17,6 +17,7 @@ O BlockTracer usa blockchain para registrar uma fonte auditável de origem e mov
 - somente fabricantes autorizados registram produtos;
 - o ID de produto é único e não pode ser cadastrado duas vezes;
 - cada cadastro gera QR Code para consulta;
+- cada QR Code pode ser salvo em bucket privado do MinIO e exibido na listagem por link temporário;
 - a tela de consulta lista os produtos registrados e permite pesquisar por nome, lote, fabricante ou ID;
 - a carteira ativa pode ser trocada pela interface para demonstrar os diferentes perfis locais;
 - o administrador vincula cada carteira a um participante identificado por nome e organização;
@@ -68,9 +69,37 @@ Depois execute, sempre na raiz do projeto:
 docker compose --profile tools run --rm compiler
 docker compose --profile tools run --build --rm deployer
 docker compose up -d --build app
+docker compose up -d --build verifier
 ```
 
 O `compiler` lê o caminho `CONTRACT_SOURCE_PATH` do `.env`. O padrão já aponta para `/sources/ProductOriginChain.sol`, que é o arquivo do contrato dentro do container. O `deployer` grava o endereço recém-publicado no `.env`, e a interface fica em `http://localhost:8501`.
+
+### Verificação pelo celular
+
+O serviço `verifier` é uma interface de consulta sem carteiras ou funções de escrita. Ele usa a câmera do navegador para ler o QR Code e fica disponível na porta `8502`. Com o celular e o computador na mesma rede Wi-Fi, abra no celular `http://IP-DO-COMPUTADOR:8502` — por exemplo, `http://192.168.0.15:8502`.
+
+No Windows, execute `ipconfig` para descobrir o IPv4 do computador e permita o acesso à rede privada caso o firewall solicite. A interface principal continua limitada a `localhost:8501`; não exponha as ações administrativas do Ganache para a rede local.
+
+### Armazenamento dos QR Codes no MinIO
+
+O envio ao MinIO é opcional: se as variáveis abaixo estiverem preenchidas, cada QR Code gerado após o registro será enviado ao bucket privado. A tela **Consultar produtos** gera uma URL assinada temporária para exibir a imagem, sem tornar o bucket público.
+
+```env
+MINIO_ENDPOINT=https://storage.thinktedlab.org
+MINIO_ACCESS_KEY=blockchain-app
+MINIO_SECRET_KEY=sua_chave_secreta
+MINIO_BUCKET=blockchain
+MINIO_REGION=us-east-1
+MINIO_QR_PREFIX=qrcodes
+```
+
+Após atualizar o `.env`, reconstrua a interface principal:
+
+```powershell
+docker compose up -d --build app
+```
+
+O usuário precisa ter permissão `s3:PutObject` e `s3:GetObject` para o prefixo `qrcodes/` do bucket `blockchain`. QR Codes gerados antes dessa configuração permanecem apenas no download local e não terão imagem remota.
 
 ### Carteiras e perfis no Ganache
 

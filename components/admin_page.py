@@ -1,6 +1,6 @@
 import streamlit as st
 
-from services.contract_service import participant_label, send_transaction, short_address
+from services.contract_service import get_participant, participant_label, send_transaction, short_address
 
 
 class AdminPage:
@@ -14,19 +14,43 @@ class AdminPage:
             st.warning("A carteira conectada não é a administradora. Alterações de permissão serão rejeitadas.")
 
         st.caption("Cadastre a identificação e as permissões das contas locais do Ganache.")
+        account = st.selectbox(
+            "Carteira do participante",
+            options=st.session_state.available_accounts,
+            format_func=short_address,
+            key="admin_selected_account",
+        )
+        participant = get_participant(account)
+
+        if participant["exists"]:
+            st.info(f"Dados já cadastrados: {participant['name']} · {participant['organization']}")
+
         with st.form("participant_form"):
-            account = st.selectbox(
-                "Carteira do participante",
-                options=st.session_state.available_accounts,
-                format_func=short_address,
+            participant_name = st.text_input(
+                "Nome do participante",
+                value=participant["name"],
+                placeholder="Ex.: Maria Santos",
+                key=f"participant_name_{account}",
             )
-            participant_name = st.text_input("Nome do participante", placeholder="Ex.: Maria Santos")
-            organization_name = st.text_input("Empresa ou organização", placeholder="Ex.: Distribuidora Norte")
+            organization_name = st.text_input(
+                "Empresa ou organização",
+                value=participant["organization"],
+                placeholder="Ex.: Distribuidora Norte",
+                key=f"participant_organization_{account}",
+            )
             left, right = st.columns(2)
             with left:
-                manufacturer_authorized = st.checkbox("Autorizar como fabricante")
+                manufacturer_authorized = st.checkbox(
+                    "Autorizar como fabricante",
+                    value=participant["is_manufacturer"],
+                    key=f"participant_manufacturer_{account}",
+                )
             with right:
-                custodian_authorized = st.checkbox("Autorizar como custodiante")
+                custodian_authorized = st.checkbox(
+                    "Autorizar como custodiante",
+                    value=participant["is_custodian"],
+                    key=f"participant_custodian_{account}",
+                )
             submitted = st.form_submit_button("Salvar participante", use_container_width=True)
 
         if submitted:
