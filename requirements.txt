@@ -1,0 +1,7 @@
+streamlit==1.32.0
+web3
+python-dotenv
+pillow==10.2.0
+pyzbar==0.1.9
+numpy
+qrcode==8.1

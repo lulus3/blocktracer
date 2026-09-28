@@ -1,0 +1,69 @@
+services:
+  ganache:
+    image: trufflesuite/ganache:latest
+    container_name: productorigin-ganache
+    ports:
+      - "127.0.0.1:8545:8545"
+    command:
+      - "--chain.chainId=1337"
+      - "--chain.networkId=1337"
+      - "--chain.hardfork=shanghai"
+      - "--wallet.totalAccounts=10"
+      - "--wallet.defaultBalance=1000"
+      - "--wallet.deterministic"
+      - "--database.dbPath=/data"
+    volumes:
+      - ganache-data:/data
+    restart: unless-stopped
+
+  compiler:
+    image: ethereum/solc:0.8.24
+    profiles: ["tools"]
+    volumes:
+      - ./:/sources:ro
+      - ./artifacts/solc:/artifacts
+    command:
+      - "--overwrite"
+      - "--optimize"
+      - "--via-ir"
+      - "--evm-version"
+      - "shanghai"
+      - "--abi"
+      - "--bin"
+      - "--output-dir"
+      - "/artifacts"
+      - "${CONTRACT_SOURCE_PATH:-/sources/ProductOriginChain.sol}"
+
+  deployer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles: ["tools"]
+    env_file:
+      - .env
+    environment:
+      PROVIDER_URL: http://ganache:8545
+      CONTRACT_ARTIFACT_PATH: /app/artifacts/solc
+      ENV_FILE_PATH: /workspace/.env
+    depends_on:
+      - ganache
+    volumes:
+      - ./artifacts/solc:/app/artifacts/solc:ro
+      - ./:/workspace
+    command: ["python", "scripts/deploy_contract.py", "--update-env"]
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      PROVIDER_URL: http://ganache:8545
+      CONTRACT_ADDRESS: ${CONTRACT_ADDRESS:-}
+    depends_on:
+      - ganache
+    ports:
+      - "127.0.0.1:8501:8501"
+    restart: unless-stopped
+
+volumes:
+  ganache-data:
